@@ -29,7 +29,7 @@ public class ParqueaderoController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar parqueaderos disponibles", description = "Público - muestra parqueaderos aprobados y disponibles")
+    @Operation(summary = "Listar parqueaderos disponibles")
     public ResponseEntity<List<ParqueaderoResponse>> listarDisponibles() {
         return ResponseEntity.ok(parqueaderoUseCase.listarDisponibles());
     }
@@ -37,18 +37,18 @@ public class ParqueaderoController {
     @PostMapping
     @PreAuthorize("hasRole('DUENO')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Crear parqueadero", description = "Solo DUENO - queda en estado PENDIENTE_APROBACION")
+    @Operation(summary = "Crear parqueadero")
     public ResponseEntity<ParqueaderoResponse> crear(
             @Valid @RequestBody ParqueaderoRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        ParqueaderoResponse response = parqueaderoUseCase.crear(request, userDetails.getUsername());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(parqueaderoUseCase.crear(request, userDetails.getUsername()));
     }
 
     @GetMapping("/mis-parqueaderos")
     @PreAuthorize("hasRole('DUENO')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Mis parqueaderos", description = "Lista parqueaderos del dueño autenticado")
+    @Operation(summary = "Mis parqueaderos")
     public ResponseEntity<List<ParqueaderoResponse>> misParqueaderos(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(parqueaderoUseCase.listarMisParqueaderos(userDetails.getUsername()));
@@ -57,7 +57,7 @@ public class ParqueaderoController {
     @PatchMapping("/{id}/disponibilidad")
     @PreAuthorize("hasRole('DUENO')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Actualizar disponibilidad", description = "El dueño activa/desactiva su parqueadero")
+    @Operation(summary = "Actualizar disponibilidad")
     public ResponseEntity<ParqueaderoResponse> actualizarDisponibilidad(
             @PathVariable UUID id,
             @RequestParam boolean disponible,
@@ -66,10 +66,21 @@ public class ParqueaderoController {
                 parqueaderoUseCase.actualizarDisponibilidad(id, disponible, userDetails.getUsername()));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DUENO')")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Eliminar parqueadero", description = "Solo si no tiene reservas activas")
+    public ResponseEntity<Void> eliminar(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        parqueaderoUseCase.eliminar(id, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/admin/{id}/aprobar")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Aprobar parqueadero", description = "ADMINISTRADOR aprueba un parqueadero pendiente")
+    @Operation(summary = "Aprobar parqueadero")
     public ResponseEntity<ParqueaderoResponse> aprobar(@PathVariable UUID id) {
         return ResponseEntity.ok(parqueaderoUseCase.aprobar(id));
     }
@@ -77,7 +88,7 @@ public class ParqueaderoController {
     @PatchMapping("/admin/{id}/rechazar")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Rechazar parqueadero", description = "ADMINISTRADOR rechaza un parqueadero con motivo opcional")
+    @Operation(summary = "Rechazar parqueadero")
     public ResponseEntity<ParqueaderoResponse> rechazar(
             @PathVariable UUID id,
             @RequestParam(required = false) String motivo) {
@@ -87,7 +98,7 @@ public class ParqueaderoController {
     @GetMapping("/admin/pendientes")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Parqueaderos pendientes", description = "ADMINISTRADOR lista parqueaderos en espera de aprobación")
+    @Operation(summary = "Parqueaderos pendientes")
     public ResponseEntity<List<ParqueaderoResponse>> listarPendientes() {
         return ResponseEntity.ok(parqueaderoUseCase.listarPendientes());
     }

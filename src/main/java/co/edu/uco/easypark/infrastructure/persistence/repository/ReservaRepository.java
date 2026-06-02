@@ -15,12 +15,10 @@ import java.util.UUID;
 
 @Repository
 public interface ReservaRepository extends JpaRepository<ReservaEntity, UUID> {
-
     List<ReservaEntity> findByConductor(UsuarioEntity conductor);
-
     List<ReservaEntity> findByParqueadero(ParqueaderoEntity parqueadero);
-
     List<ReservaEntity> findByConductorAndEstado(UsuarioEntity conductor, EstadoReserva estado);
+    List<ReservaEntity> findByParqueaderoIdAndEstado(UUID parqueaderoId, EstadoReserva estado);
 
     @Query("SELECT r FROM ReservaEntity r WHERE r.parqueadero = :parqueadero " +
            "AND r.estado IN ('CONFIRMADA', 'EN_CURSO') " +
