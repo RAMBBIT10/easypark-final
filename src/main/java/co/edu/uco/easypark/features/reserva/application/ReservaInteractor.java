@@ -67,7 +67,6 @@ public class ReservaInteractor implements IReservaUseCase {
 
         boolean locked = redisService.bloquear(parqueadero.getId(), 30);
         try {
-            
             List<ReservaEntity> conflictos = reservaRepository.findConflictos(
                     parqueadero, request.getFechaInicio(), request.getFechaInicio().plusYears(1));
             if (!conflictos.isEmpty()) {
@@ -79,26 +78,31 @@ public class ReservaInteractor implements IReservaUseCase {
             reserva.setParqueadero(parqueadero);
             reserva.setPlaca(request.getPlaca());
             reserva.setFechaInicio(request.getFechaInicio());
-            reserva.setFechaFin(null); 
-            reserva.setTotalAPagar(null); 
+            reserva.setFechaFin(null);
+            reserva.setTotalAPagar(null);
             reserva.setEstado(EstadoReserva.EN_CURSO);
             reserva.setConductorConfirmoPago(false);
             reserva.setDuenioConfirmoPago(false);
 
             ReservaEntity saved = reservaRepository.save(reserva);
 
+            parqueadero.setDisponible(false);
+            parqueaderoRepository.save(parqueadero);
+            redisService.eliminar(parqueadero.getId());
+            wsHandler.notificarCambioDisponibilidad(parqueadero.getId(), false);
+
             notificationService.enviarNotificacion(
                     parqueadero.getDuenio().getTokenFcm(),
-                    "Nueva reserva — Placa: " + request.getPlaca(),
-                    conductor.getNombre() + " llegó a \"" + parqueadero.getNombre() + "\".");
+                    "Nueva reserva - Placa: " + request.getPlaca(),
+                    conductor.getNombre() + " llego a \"" + parqueadero.getNombre() + "\".");
 
             notificationService.enviarNotificacion(
                     conductor.getTokenFcm(),
                     "Reserva activa",
-                    "Estás en \"" + parqueadero.getNombre() + "\". Cuando termines presiona Finalizar estadía.");
+                    "Estas en \"" + parqueadero.getNombre() + "\". Cuando termines presiona Finalizar estadia.");
 
             wsHandler.notificarReservaCreada(parqueadero.getId(), saved.getId());
-            logger.info("Reserva {} creada — placa: {}", saved.getId(), request.getPlaca());
+            logger.info("Reserva {} creada - placa: {}", saved.getId(), request.getPlaca());
             return toResponse(saved);
         } finally {
             if (locked) redisService.liberarBloqueo(parqueadero.getId());
@@ -118,12 +122,11 @@ public class ReservaInteractor implements IReservaUseCase {
             throw new EasyParkException("reserva.already.cancelled", HttpStatus.BAD_REQUEST);
         }
 
-        
         LocalDateTime fechaFin = LocalDateTime.now();
         reserva.setFechaFin(fechaFin);
 
         long minutos = Duration.between(reserva.getFechaInicio(), fechaFin).toMinutes();
-        if (minutos < 1) minutos = 1; 
+        if (minutos < 1) minutos = 1;
         BigDecimal horasFrac = BigDecimal.valueOf(minutos).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
         BigDecimal total = reserva.getParqueadero().getPrecioPorHora()
                 .multiply(horasFrac).setScale(0, RoundingMode.HALF_UP);
@@ -133,18 +136,22 @@ public class ReservaInteractor implements IReservaUseCase {
 
         ReservaEntity saved = reservaRepository.save(reserva);
 
-        
+        reserva.getParqueadero().setDisponible(true);
+        parqueaderoRepository.save(reserva.getParqueadero());
+        redisService.eliminar(reserva.getParqueadero().getId());
+        wsHandler.notificarCambioDisponibilidad(reserva.getParqueadero().getId(), true);
+
         notificationService.enviarNotificacion(
                 conductor.getTokenFcm(),
-                "Estadía finalizada",
+                "Estadia finalizada",
                 "Total a pagar: $" + total + ". Confirma el pago cuando lo hagas.");
 
         notificationService.enviarNotificacion(
                 reserva.getParqueadero().getDuenio().getTokenFcm(),
-                "Estadía finalizada — Placa: " + reserva.getPlaca(),
-                conductor.getNombre() + " finalizó. Total a cobrar: $" + total);
+                "Estadia finalizada - Placa: " + reserva.getPlaca(),
+                conductor.getNombre() + " finalizo. Total a cobrar: $" + total);
 
-        logger.info("Estadía finalizada — reserva: {}, total: ${}", id, total);
+        logger.info("Estadia finalizada - reserva: {}, total: ${}", id, total);
         return toResponse(saved);
     }
 
@@ -168,12 +175,12 @@ public class ReservaInteractor implements IReservaUseCase {
         if (saved.getEstado() == EstadoReserva.PENDIENTE_PAGO) {
             notificationService.enviarNotificacion(
                     reserva.getParqueadero().getDuenio().getTokenFcm(),
-                    "El conductor confirmó el pago",
-                    conductor.getNombre() + " confirmó que pagó $" + reserva.getTotalAPagar() +
-                    ". Confirma tú también para finalizar.");
+                    "El conductor confirmo el pago",
+                    conductor.getNombre() + " confirmo que pago $" + reserva.getTotalAPagar() +
+                    ". Confirma tu tambien para finalizar.");
         }
 
-        logger.info("Conductor {} confirmó pago de reserva {}", emailConductor, id);
+        logger.info("Conductor {} confirmo pago de reserva {}", emailConductor, id);
         return toResponse(saved);
     }
 
@@ -197,12 +204,12 @@ public class ReservaInteractor implements IReservaUseCase {
         if (saved.getEstado() == EstadoReserva.PENDIENTE_PAGO) {
             notificationService.enviarNotificacion(
                     reserva.getConductor().getTokenFcm(),
-                    "El dueño confirmó el pago",
-                    "El dueño de \"" + reserva.getParqueadero().getNombre() +
-                    "\" confirmó. Confirma tú también para finalizar.");
+                    "El dueno confirmo el pago",
+                    "El dueno de \"" + reserva.getParqueadero().getNombre() +
+                    "\" confirmo. Confirma tu tambien para finalizar.");
         }
 
-        logger.info("Dueño {} confirmó pago de reserva {}", emailDuenio, id);
+        logger.info("Dueno {} confirmo pago de reserva {}", emailDuenio, id);
         return toResponse(saved);
     }
 
@@ -213,15 +220,15 @@ public class ReservaInteractor implements IReservaUseCase {
 
             notificationService.enviarNotificacion(
                     reserva.getConductor().getTokenFcm(),
-                    "✅ Pago confirmado — Proceso finalizado",
+                    "Pago confirmado - Proceso finalizado",
                     "Gracias por usar Easy Park. Total pagado: $" + reserva.getTotalAPagar());
 
             notificationService.enviarNotificacion(
                     reserva.getParqueadero().getDuenio().getTokenFcm(),
-                    "✅ Pago confirmado — Proceso finalizado",
+                    "Pago confirmado - Proceso finalizado",
                     "Pago de $" + reserva.getTotalAPagar() + " confirmado por ambas partes.");
 
-            logger.info("✅ Reserva {} FINALIZADA — total: ${}", reserva.getId(), reserva.getTotalAPagar());
+            logger.info("Reserva {} FINALIZADA - total: ${}", reserva.getId(), reserva.getTotalAPagar());
         }
     }
 
@@ -241,10 +248,15 @@ public class ReservaInteractor implements IReservaUseCase {
         reserva.setEstado(EstadoReserva.CANCELADA);
         ReservaEntity saved = reservaRepository.save(reserva);
 
+        reserva.getParqueadero().setDisponible(true);
+        parqueaderoRepository.save(reserva.getParqueadero());
+        redisService.eliminar(reserva.getParqueadero().getId());
+        wsHandler.notificarCambioDisponibilidad(reserva.getParqueadero().getId(), true);
+
         notificationService.enviarNotificacion(
                 reserva.getParqueadero().getDuenio().getTokenFcm(),
                 "Reserva cancelada",
-                conductor.getNombre() + " canceló su reserva en \"" +
+                conductor.getNombre() + " cancelo su reserva en \"" +
                 reserva.getParqueadero().getNombre() + "\".");
 
         return toResponse(saved);
