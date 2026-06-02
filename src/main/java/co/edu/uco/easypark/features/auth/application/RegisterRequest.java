@@ -17,20 +17,22 @@ public class RegisterRequest {
     @NotNull(message = "El tipo de documento es requerido")
     private TipoDocumento tipoDocumento;
 
-    @NotBlank(message = "El número de documento es requerido")
-    @Size(min = 5, max = 20, message = "El documento debe tener entre 5 y 20 caracteres")
+    @NotBlank(message = "El numero de documento es requerido")
+    @Size(min = 5, max = 20)
     private String numeroDocumento;
 
     @NotBlank(message = "El email es requerido")
-    @Email(message = "Formato de email inválido")
+    @Email(message = "Formato de email invalido")
     private String email;
 
-    @NotBlank(message = "La contraseña es requerida")
-    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @NotBlank(message = "La contrasena es requerida")
+    @Size(min = 6)
     private String password;
 
     @NotNull(message = "El rol es requerido")
     private Rol rol;
+
+    private String recaptchaToken;
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
@@ -46,4 +48,6 @@ public class RegisterRequest {
     public void setPassword(String password) { this.password = password; }
     public Rol getRol() { return rol; }
     public void setRol(Rol rol) { this.rol = rol; }
+    public String getRecaptchaToken() { return recaptchaToken; }
+    public void setRecaptchaToken(String recaptchaToken) { this.recaptchaToken = recaptchaToken; }
 }
