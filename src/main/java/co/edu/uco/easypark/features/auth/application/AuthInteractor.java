@@ -3,6 +3,7 @@ package co.edu.uco.easypark.features.auth.application;
 import co.edu.uco.easypark.crosscutting.exception.EasyParkException;
 import co.edu.uco.easypark.crosscutting.helper.OWASPSanitizerHelper;
 import co.edu.uco.easypark.crosscutting.security.JwtService;
+import co.edu.uco.easypark.infrastructure.email.EmailService;
 import co.edu.uco.easypark.infrastructure.persistence.entity.UsuarioEntity;
 import co.edu.uco.easypark.infrastructure.persistence.repository.UsuarioRepository;
 import org.slf4j.Logger;
@@ -25,17 +26,20 @@ public class AuthInteractor implements IAuthUseCase {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final OWASPSanitizerHelper sanitizer;
+    private final EmailService emailService;
 
     public AuthInteractor(UsuarioRepository usuarioRepository,
                           JwtService jwtService,
                           AuthenticationManager authenticationManager,
                           PasswordEncoder passwordEncoder,
-                          OWASPSanitizerHelper sanitizer) {
+                          OWASPSanitizerHelper sanitizer,
+                          EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
         this.sanitizer = sanitizer;
+        this.emailService = emailService;
     }
 
     @Override
@@ -90,6 +94,8 @@ public class AuthInteractor implements IAuthUseCase {
 
         UsuarioEntity saved = usuarioRepository.save(usuario);
         logger.info("New user registered: {} with role {}", email, request.getRol());
+
+        emailService.enviarBienvenida(email, saved.getNombre());
 
         String token = jwtService.generateToken(saved, saved.getRol().name());
 
