@@ -29,19 +29,19 @@ public class CatalogoController {
     }
 
     @GetMapping("/parametros")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public List<ParametroCatalogoEntity> listarParametros() {
         return parametroRepository.findAll();
     }
 
     @PostMapping("/parametros")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ParametroCatalogoEntity crearParametro(@RequestBody ParametroCatalogoEntity parametro) {
         return parametroRepository.save(parametro);
     }
 
     @PutMapping("/parametros/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ParametroCatalogoEntity> actualizarParametro(@PathVariable Long id, @RequestBody ParametroCatalogoEntity parametro) {
         return parametroRepository.findById(id).map(p -> {
             p.setClave(parametro.getClave());
@@ -53,26 +53,26 @@ public class CatalogoController {
     }
 
     @DeleteMapping("/parametros/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminarParametro(@PathVariable Long id) {
         parametroRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/mensajes")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public List<MensajeCatalogoEntity> listarMensajes() {
         return mensajeRepository.findAll();
     }
 
     @PostMapping("/mensajes")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public MensajeCatalogoEntity crearMensaje(@RequestBody MensajeCatalogoEntity mensaje) {
         return mensajeRepository.save(mensaje);
     }
 
     @PutMapping("/mensajes/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<MensajeCatalogoEntity> actualizarMensaje(@PathVariable Long id, @RequestBody MensajeCatalogoEntity mensaje) {
         return mensajeRepository.findById(id).map(m -> {
             m.setCodigo(mensaje.getCodigo());
@@ -84,26 +84,26 @@ public class CatalogoController {
     }
 
     @DeleteMapping("/mensajes/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminarMensaje(@PathVariable Long id) {
         mensajeRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/notificaciones")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public List<NotificacionCatalogoEntity> listarNotificaciones() {
         return notificacionRepository.findAll();
     }
 
     @PostMapping("/notificaciones")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public NotificacionCatalogoEntity crearNotificacion(@RequestBody NotificacionCatalogoEntity notificacion) {
         return notificacionRepository.save(notificacion);
     }
 
     @PutMapping("/notificaciones/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<NotificacionCatalogoEntity> actualizarNotificacion(@PathVariable Long id, @RequestBody NotificacionCatalogoEntity notificacion) {
         return notificacionRepository.findById(id).map(n -> {
             n.setTipo(notificacion.getTipo());
@@ -115,7 +115,7 @@ public class CatalogoController {
     }
 
     @DeleteMapping("/notificaciones/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminarNotificacion(@PathVariable Long id) {
         notificacionRepository.deleteById(id);
         return ResponseEntity.noContent().build();
