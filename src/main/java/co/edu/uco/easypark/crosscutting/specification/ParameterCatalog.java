@@ -34,7 +34,8 @@ public final class ParameterCatalog {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",
-            "/ws/**"
+            "/ws/**",
+            "/actuator/prometheus"
     };
 
     
