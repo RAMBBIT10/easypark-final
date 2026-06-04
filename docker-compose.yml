@@ -156,6 +156,18 @@ services:
     depends_on:
       - prometheus
 
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: easypark-zap
+    depends_on:
+      waf:
+        condition: service_healthy
+    volumes:
+      - ./zap-reports:/zap/wrk
+    command: zap-baseline.py -t http://waf:8080 -r reporte-easypark.html -I
+    profiles:
+      - security
+
 volumes:
   easypark_pgdata:
     name: easypark_pgdata
