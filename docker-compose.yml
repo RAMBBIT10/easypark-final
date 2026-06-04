@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: easy_park
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -48,16 +48,16 @@ services:
     environment:
       SERVER_PORT: 8080
       DB_URL: jdbc:postgresql://postgres:5432/easy_park
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      JWT_SECRET: easypark-super-secret-jwt-key-2026-universidad-cordoba
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 86400000
-      RESEND_API_KEY: ${RESEND_API_KEY:-test-key}
-      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-fzdzwkcpgueyww5e.us.auth0.com}
-      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-trl6ugAyGyvS4vvmyUtdvziqXpLra0G6}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
     expose:
       - "8080"
     healthcheck:
