@@ -2,7 +2,6 @@ package co.edu.uco.easypark.infrastructure.config;
 
 import co.edu.uco.easypark.crosscutting.security.JwtAuthFilter;
 import co.edu.uco.easypark.crosscutting.security.RateLimitFilter;
-import co.edu.uco.easypark.crosscutting.security.WafFilter;
 import co.edu.uco.easypark.crosscutting.specification.ParameterCatalog;
 import co.edu.uco.easypark.infrastructure.persistence.entity.UsuarioEntity;
 import co.edu.uco.easypark.infrastructure.persistence.repository.UsuarioRepository;
@@ -37,14 +36,11 @@ public class SecurityConfig {
 
     private final UsuarioRepository usuarioRepository;
     private final RateLimitFilter rateLimitFilter;
-    private final WafFilter wafFilter;
 
     public SecurityConfig(UsuarioRepository usuarioRepository,
-                          RateLimitFilter rateLimitFilter,
-                          WafFilter wafFilter) {
+                          RateLimitFilter rateLimitFilter) {
         this.usuarioRepository = usuarioRepository;
         this.rateLimitFilter = rateLimitFilter;
-        this.wafFilter = wafFilter;
     }
 
     @Bean
@@ -79,7 +75,6 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(wafFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
