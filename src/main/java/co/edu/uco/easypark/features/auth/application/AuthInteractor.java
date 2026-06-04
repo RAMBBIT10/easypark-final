@@ -3,6 +3,7 @@ package co.edu.uco.easypark.features.auth.application;
 import co.edu.uco.easypark.crosscutting.exception.EasyParkException;
 import co.edu.uco.easypark.crosscutting.helper.OWASPSanitizerHelper;
 import co.edu.uco.easypark.crosscutting.security.JwtService;
+import co.edu.uco.easypark.crosscutting.security.RecaptchaService;
 import co.edu.uco.easypark.infrastructure.email.EmailService;
 import co.edu.uco.easypark.infrastructure.persistence.entity.UsuarioEntity;
 import co.edu.uco.easypark.infrastructure.persistence.repository.UsuarioRepository;
@@ -27,19 +28,22 @@ public class AuthInteractor implements IAuthUseCase {
     private final PasswordEncoder passwordEncoder;
     private final OWASPSanitizerHelper sanitizer;
     private final EmailService emailService;
+    private final RecaptchaService recaptchaService;
 
     public AuthInteractor(UsuarioRepository usuarioRepository,
                           JwtService jwtService,
                           AuthenticationManager authenticationManager,
                           PasswordEncoder passwordEncoder,
                           OWASPSanitizerHelper sanitizer,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          RecaptchaService recaptchaService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
         this.sanitizer = sanitizer;
         this.emailService = emailService;
+        this.recaptchaService = recaptchaService;
     }
 
     @Override
@@ -77,6 +81,14 @@ public class AuthInteractor implements IAuthUseCase {
     @Transactional
     public LoginResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
+
+        if (request.getRecaptchaToken() != null && !request.getRecaptchaToken().isBlank()) {
+            boolean captchaValido = recaptchaService.validar(request.getRecaptchaToken());
+            if (!captchaValido) {
+                logger.warn("reCAPTCHA invalido para registro de: {}", email);
+                throw new EasyParkException("auth.register.captcha.invalid", HttpStatus.BAD_REQUEST);
+            }
+        }
 
         if (usuarioRepository.existsByEmail(email)) {
             throw new EasyParkException("auth.register.email.exists", HttpStatus.CONFLICT);
