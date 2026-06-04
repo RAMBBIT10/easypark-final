@@ -1,13 +1,11 @@
-_format_version: "3.0"
+﻿_format_version: "3.0"
 _transform: true
-
 services:
   - name: easypark-backend
     url: http://backend:8080
     connect_timeout: 10000
     read_timeout: 30000
     write_timeout: 30000
-
 routes:
   - name: auth-route
     service: easypark-backend
@@ -15,35 +13,42 @@ routes:
       - /auth
     strip_path: false
     preserve_host: false
-
   - name: parqueaderos-route
     service: easypark-backend
     paths:
       - /parqueaderos
     strip_path: false
     preserve_host: false
-
   - name: reservas-route
     service: easypark-backend
     paths:
       - /reservas
     strip_path: false
     preserve_host: false
-
   - name: catalogos-route
     service: easypark-backend
     paths:
       - /catalogos
     strip_path: false
     preserve_host: false
-
   - name: actuator-route
     service: easypark-backend
     paths:
       - /actuator
     strip_path: false
     preserve_host: false
-
+  - name: swagger-ui-route
+    service: easypark-backend
+    paths:
+      - /swagger-ui
+    strip_path: false
+    preserve_host: false
+  - name: swagger-api-docs-route
+    service: easypark-backend
+    paths:
+      - /v3/api-docs
+    strip_path: false
+    preserve_host: false
 plugins:
   - name: cors
     config:
@@ -65,14 +70,12 @@ plugins:
         - Authorization
       credentials: true
       max_age: 3600
-
   - name: rate-limiting
     config:
       minute: 120
       hour: 5000
       policy: local
       fault_tolerant: true
-
   - name: response-transformer
     config:
       add:
