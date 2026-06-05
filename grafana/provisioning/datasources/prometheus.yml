@@ -7,3 +7,8 @@ datasources:
     url: http://easypark-prometheus:9090
     isDefault: true
     editable: false
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://easypark-loki:3100
+    editable: false

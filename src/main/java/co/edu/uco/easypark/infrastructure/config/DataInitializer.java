@@ -83,8 +83,6 @@ public class DataInitializer implements CommandLineRunner {
         crearParametro("PRECIO_MAXIMO_PARQUEADERO", "50000", "Precio maximo por hora en pesos colombianos");
         crearParametro("DURACION_MINIMA_RESERVA", "1", "Duracion minima de reserva en horas");
         crearParametro("DURACION_MAXIMA_RESERVA", "24", "Duracion maxima de reserva en horas");
-        crearParametro("RADIO_BUSQUEDA_KM", "10", "Radio de busqueda de parqueaderos en kilometros");
-        crearParametro("JWT_EXPIRACION_HORAS", "24", "Tiempo de expiracion del token JWT en horas");
         crearParametro("MAX_INTENTOS_LOGIN", "5", "Maximo de intentos de login fallidos antes de bloqueo");
         crearParametro("VERSION_APP", "1.0.0", "Version actual de la aplicacion EasyPark");
         logger.info("Parametros de catalogo inicializados");

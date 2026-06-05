@@ -10,6 +10,7 @@ import co.edu.uco.easypark.infrastructure.notification.FirebaseNotificationServi
 import co.edu.uco.easypark.infrastructure.persistence.entity.ParqueaderoEntity;
 import co.edu.uco.easypark.infrastructure.persistence.entity.ReservaEntity;
 import co.edu.uco.easypark.infrastructure.persistence.entity.UsuarioEntity;
+import co.edu.uco.easypark.infrastructure.persistence.repository.ParametroCatalogoRepository;
 import co.edu.uco.easypark.infrastructure.persistence.repository.ParqueaderoRepository;
 import co.edu.uco.easypark.infrastructure.persistence.repository.ReservaRepository;
 import co.edu.uco.easypark.infrastructure.persistence.repository.UsuarioRepository;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,6 +37,7 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
     private final ParqueaderoWebSocketHandler wsHandler;
     private final FirebaseNotificationService notificationService;
     private final OWASPSanitizerHelper sanitizer;
+    private final ParametroCatalogoRepository parametroRepository;
 
     public ParqueaderoInteractor(ParqueaderoRepository parqueaderoRepository,
                                   UsuarioRepository usuarioRepository,
@@ -42,7 +45,8 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
                                   RedisParqueaderoService redisService,
                                   ParqueaderoWebSocketHandler wsHandler,
                                   FirebaseNotificationService notificationService,
-                                  OWASPSanitizerHelper sanitizer) {
+                                  OWASPSanitizerHelper sanitizer,
+                                  ParametroCatalogoRepository parametroRepository) {
         this.parqueaderoRepository = parqueaderoRepository;
         this.usuarioRepository = usuarioRepository;
         this.reservaRepository = reservaRepository;
@@ -50,11 +54,13 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
         this.wsHandler = wsHandler;
         this.notificationService = notificationService;
         this.sanitizer = sanitizer;
+        this.parametroRepository = parametroRepository;
     }
 
     @Override
     @Transactional
     public ParqueaderoResponse crear(ParqueaderoRequest request, String emailDuenio) {
+        validarPrecio(request.getPrecioPorHora());
         UsuarioEntity duenio = findUsuario(emailDuenio);
         ParqueaderoEntity entity = new ParqueaderoEntity();
         entity.setNombre(sanitizer.sanitizePlainText(request.getNombre()));
@@ -72,6 +78,21 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
         ParqueaderoEntity saved = parqueaderoRepository.save(entity);
         logger.info("Parqueadero creado: {} por {}", saved.getId(), emailDuenio);
         return toResponse(saved);
+    }
+
+    private void validarPrecio(BigDecimal precio) {
+        BigDecimal minimo = parametroRepository.findByClave("PRECIO_MINIMO_PARQUEADERO")
+                .map(p -> new BigDecimal(p.getValor()))
+                .orElse(new BigDecimal("1000"));
+        BigDecimal maximo = parametroRepository.findByClave("PRECIO_MAXIMO_PARQUEADERO")
+                .map(p -> new BigDecimal(p.getValor()))
+                .orElse(new BigDecimal("50000"));
+        if (precio.compareTo(minimo) < 0) {
+            throw new EasyParkException("El precio minimo por hora es $" + minimo, HttpStatus.BAD_REQUEST);
+        }
+        if (precio.compareTo(maximo) > 0) {
+            throw new EasyParkException("El precio maximo por hora es $" + maximo, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Override
