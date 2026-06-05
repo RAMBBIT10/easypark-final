@@ -29,7 +29,7 @@ public class ReservaEntity {
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDateTime fechaInicio;
 
-    @Column(name = "fecha_fin", nullable = false)
+    @Column(name = "fecha_fin", nullable = true)
     private LocalDateTime fechaFin;
 
     @Column(name = "total_a_pagar", precision = 10, scale = 2)
