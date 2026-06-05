@@ -4,6 +4,7 @@ import co.edu.uco.easypark.crosscutting.exception.EasyParkException;
 import co.edu.uco.easypark.domain.model.EstadoParqueadero;
 import co.edu.uco.easypark.domain.model.EstadoReserva;
 import co.edu.uco.easypark.infrastructure.cache.RedisParqueaderoService;
+import co.edu.uco.easypark.infrastructure.email.EmailService;
 import co.edu.uco.easypark.infrastructure.gateway.ParqueaderoWebSocketHandler;
 import co.edu.uco.easypark.infrastructure.notification.FirebaseNotificationService;
 import co.edu.uco.easypark.infrastructure.persistence.entity.ParqueaderoEntity;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 public class ReservaInteractor implements IReservaUseCase {
 
     private static final Logger logger = LoggerFactory.getLogger(ReservaInteractor.class);
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final ReservaRepository reservaRepository;
     private final ParqueaderoRepository parqueaderoRepository;
@@ -37,19 +40,22 @@ public class ReservaInteractor implements IReservaUseCase {
     private final RedisParqueaderoService redisService;
     private final ParqueaderoWebSocketHandler wsHandler;
     private final FirebaseNotificationService notificationService;
+    private final EmailService emailService;
 
     public ReservaInteractor(ReservaRepository reservaRepository,
                               ParqueaderoRepository parqueaderoRepository,
                               UsuarioRepository usuarioRepository,
                               RedisParqueaderoService redisService,
                               ParqueaderoWebSocketHandler wsHandler,
-                              FirebaseNotificationService notificationService) {
+                              FirebaseNotificationService notificationService,
+                              EmailService emailService) {
         this.reservaRepository = reservaRepository;
         this.parqueaderoRepository = parqueaderoRepository;
         this.usuarioRepository = usuarioRepository;
         this.redisService = redisService;
         this.wsHandler = wsHandler;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -101,6 +107,28 @@ public class ReservaInteractor implements IReservaUseCase {
                     "Reserva activa",
                     "Estas en \"" + parqueadero.getNombre() + "\". Cuando termines presiona Finalizar estadia.");
 
+            try {
+                emailService.enviarConfirmacionReserva(
+                        conductor.getEmail(),
+                        conductor.getNombre(),
+                        parqueadero.getNombre(),
+                        request.getFechaInicio().format(FMT));
+            } catch (Exception e) {
+                logger.warn("No se pudo enviar email de reserva al conductor: {}", e.getMessage());
+            }
+
+            try {
+                emailService.enviarNuevaReservaDuenio(
+                        parqueadero.getDuenio().getEmail(),
+                        parqueadero.getDuenio().getNombre(),
+                        parqueadero.getNombre(),
+                        conductor.getNombre() + " " + conductor.getApellido(),
+                        request.getPlaca(),
+                        request.getFechaInicio().format(FMT));
+            } catch (Exception e) {
+                logger.warn("No se pudo enviar email de reserva al duenio: {}", e.getMessage());
+            }
+
             wsHandler.notificarReservaCreada(parqueadero.getId(), saved.getId());
             logger.info("Reserva {} creada - placa: {}", saved.getId(), request.getPlaca());
             return toResponse(saved);
@@ -150,6 +178,18 @@ public class ReservaInteractor implements IReservaUseCase {
                 reserva.getParqueadero().getDuenio().getTokenFcm(),
                 "Estadia finalizada - Placa: " + reserva.getPlaca(),
                 conductor.getNombre() + " finalizo. Total a cobrar: $" + total);
+
+        try {
+            emailService.enviarEstadiaFinalizada(
+                    conductor.getEmail(),
+                    conductor.getNombre(),
+                    reserva.getParqueadero().getNombre(),
+                    total.toString(),
+                    reserva.getFechaInicio().format(FMT),
+                    fechaFin.format(FMT));
+        } catch (Exception e) {
+            logger.warn("No se pudo enviar email de finalizacion al conductor: {}", e.getMessage());
+        }
 
         logger.info("Estadia finalizada - reserva: {}, total: ${}", id, total);
         return toResponse(saved);
@@ -228,6 +268,16 @@ public class ReservaInteractor implements IReservaUseCase {
                     "Pago confirmado - Proceso finalizado",
                     "Pago de $" + reserva.getTotalAPagar() + " confirmado por ambas partes.");
 
+            try {
+                emailService.enviarPagoFinalizado(
+                        reserva.getConductor().getEmail(),
+                        reserva.getConductor().getNombre(),
+                        reserva.getParqueadero().getNombre(),
+                        reserva.getTotalAPagar().toString());
+            } catch (Exception e) {
+                logger.warn("No se pudo enviar email de pago finalizado: {}", e.getMessage());
+            }
+
             logger.info("Reserva {} FINALIZADA - total: ${}", reserva.getId(), reserva.getTotalAPagar());
         }
     }
@@ -258,6 +308,16 @@ public class ReservaInteractor implements IReservaUseCase {
                 "Reserva cancelada",
                 conductor.getNombre() + " cancelo su reserva en \"" +
                 reserva.getParqueadero().getNombre() + "\".");
+
+        try {
+            emailService.enviarRechazoReserva(
+                    conductor.getEmail(),
+                    conductor.getNombre(),
+                    reserva.getParqueadero().getNombre(),
+                    "Cancelada por el conductor");
+        } catch (Exception e) {
+            logger.warn("No se pudo enviar email de cancelacion: {}", e.getMessage());
+        }
 
         return toResponse(saved);
     }
