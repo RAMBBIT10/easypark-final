@@ -58,6 +58,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN}
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY}
     expose:
       - "8080"
     healthcheck:
