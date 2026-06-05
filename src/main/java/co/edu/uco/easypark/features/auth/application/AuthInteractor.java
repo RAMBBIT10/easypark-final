@@ -107,7 +107,11 @@ public class AuthInteractor implements IAuthUseCase {
         UsuarioEntity saved = usuarioRepository.save(usuario);
         logger.info("New user registered: {} with role {}", email, request.getRol());
 
-        emailService.enviarBienvenida(email, saved.getNombre());
+        try {
+            emailService.enviarBienvenida(email, saved.getNombre());
+        } catch (Exception e) {
+            logger.warn("No se pudo enviar email de bienvenida a {}: {}", email, e.getMessage());
+        }
 
         String token = jwtService.generateToken(saved, saved.getRol().name());
 
