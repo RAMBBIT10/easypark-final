@@ -33,6 +33,24 @@ services:
       retries: 10
       start_period: 5s
 
+  strapi:
+    build:
+      context: C:/Users/aleji/OneDrive/Desktop/easypark-strapi
+      dockerfile: Dockerfile
+    container_name: easypark-strapi
+    restart: unless-stopped
+    ports:
+      - "1337:1337"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 1337
+      APP_KEYS: ${STRAPI_APP_KEYS}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET}
+      JWT_SECRET: ${STRAPI_JWT_SECRET}
+    volumes:
+      - easypark_strapi:/app/.tmp
+
   backend:
     build:
       context: .
@@ -61,6 +79,7 @@ services:
       RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY}
       GMAIL_USERNAME: ${GMAIL_USERNAME}
       GMAIL_PASSWORD: ${GMAIL_PASSWORD}
+      STRAPI_URL: http://strapi:1337
     expose:
       - "8080"
     healthcheck:
@@ -198,3 +217,5 @@ services:
 volumes:
   easypark_pgdata:
     name: easypark_pgdata
+  easypark_strapi:
+    name: easypark_strapi
