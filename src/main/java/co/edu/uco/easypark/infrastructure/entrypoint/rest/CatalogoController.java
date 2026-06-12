@@ -1,123 +1,29 @@
 package co.edu.uco.easypark.infrastructure.entrypoint.rest;
 
-import co.edu.uco.easypark.infrastructure.persistence.entity.MensajeCatalogoEntity;
-import co.edu.uco.easypark.infrastructure.persistence.entity.NotificacionCatalogoEntity;
-import co.edu.uco.easypark.infrastructure.persistence.entity.ParametroCatalogoEntity;
-import co.edu.uco.easypark.infrastructure.persistence.repository.MensajeCatalogoRepository;
-import co.edu.uco.easypark.infrastructure.persistence.repository.NotificacionCatalogoRepository;
-import co.edu.uco.easypark.infrastructure.persistence.repository.ParametroCatalogoRepository;
+import co.edu.uco.easypark.infrastructure.config.ParameterService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/catalogos")
 public class CatalogoController {
 
-    private final ParametroCatalogoRepository parametroRepository;
-    private final MensajeCatalogoRepository mensajeRepository;
-    private final NotificacionCatalogoRepository notificacionRepository;
+    private final ParameterService parameterService;
 
-    public CatalogoController(ParametroCatalogoRepository parametroRepository,
-                               MensajeCatalogoRepository mensajeRepository,
-                               NotificacionCatalogoRepository notificacionRepository) {
-        this.parametroRepository = parametroRepository;
-        this.mensajeRepository = mensajeRepository;
-        this.notificacionRepository = notificacionRepository;
+    public CatalogoController(ParameterService parameterService) {
+        this.parameterService = parameterService;
     }
 
-    @GetMapping("/parametros")
+    @GetMapping("/parametros/{clave}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public List<ParametroCatalogoEntity> listarParametros() {
-        return parametroRepository.findAll();
-    }
-
-    @PostMapping("/parametros")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ParametroCatalogoEntity crearParametro(@RequestBody ParametroCatalogoEntity parametro) {
-        return parametroRepository.save(parametro);
-    }
-
-    @PutMapping("/parametros/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<ParametroCatalogoEntity> actualizarParametro(@PathVariable Long id, @RequestBody ParametroCatalogoEntity parametro) {
-        return parametroRepository.findById(id).map(p -> {
-            p.setClave(parametro.getClave());
-            p.setValor(parametro.getValor());
-            p.setDescripcion(parametro.getDescripcion());
-            p.setActivo(parametro.isActivo());
-            return ResponseEntity.ok(parametroRepository.save(p));
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/parametros/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> eliminarParametro(@PathVariable Long id) {
-        parametroRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/mensajes")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public List<MensajeCatalogoEntity> listarMensajes() {
-        return mensajeRepository.findAll();
-    }
-
-    @PostMapping("/mensajes")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public MensajeCatalogoEntity crearMensaje(@RequestBody MensajeCatalogoEntity mensaje) {
-        return mensajeRepository.save(mensaje);
-    }
-
-    @PutMapping("/mensajes/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<MensajeCatalogoEntity> actualizarMensaje(@PathVariable Long id, @RequestBody MensajeCatalogoEntity mensaje) {
-        return mensajeRepository.findById(id).map(m -> {
-            m.setCodigo(mensaje.getCodigo());
-            m.setMensaje(mensaje.getMensaje());
-            m.setIdioma(mensaje.getIdioma());
-            m.setActivo(mensaje.isActivo());
-            return ResponseEntity.ok(mensajeRepository.save(m));
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/mensajes/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> eliminarMensaje(@PathVariable Long id) {
-        mensajeRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/notificaciones")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public List<NotificacionCatalogoEntity> listarNotificaciones() {
-        return notificacionRepository.findAll();
-    }
-
-    @PostMapping("/notificaciones")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public NotificacionCatalogoEntity crearNotificacion(@RequestBody NotificacionCatalogoEntity notificacion) {
-        return notificacionRepository.save(notificacion);
-    }
-
-    @PutMapping("/notificaciones/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<NotificacionCatalogoEntity> actualizarNotificacion(@PathVariable Long id, @RequestBody NotificacionCatalogoEntity notificacion) {
-        return notificacionRepository.findById(id).map(n -> {
-            n.setTipo(notificacion.getTipo());
-            n.setTitulo(notificacion.getTitulo());
-            n.setPlantilla(notificacion.getPlantilla());
-            n.setActivo(notificacion.isActivo());
-            return ResponseEntity.ok(notificacionRepository.save(n));
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/notificaciones/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> eliminarNotificacion(@PathVariable Long id) {
-        notificacionRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Map<String, String>> obtenerParametro(@PathVariable String clave) {
+        String valor = parameterService.obtener(clave);
+        if (valor != null) {
+            return ResponseEntity.ok(Map.of("clave", clave, "valor", valor));
+        }
+        return ResponseEntity.notFound().build();
     }
 }

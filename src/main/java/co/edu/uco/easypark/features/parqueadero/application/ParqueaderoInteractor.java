@@ -5,12 +5,12 @@ import co.edu.uco.easypark.crosscutting.helper.OWASPSanitizerHelper;
 import co.edu.uco.easypark.domain.model.EstadoParqueadero;
 import co.edu.uco.easypark.domain.model.EstadoReserva;
 import co.edu.uco.easypark.infrastructure.cache.RedisParqueaderoService;
+import co.edu.uco.easypark.infrastructure.config.ParameterService;
 import co.edu.uco.easypark.infrastructure.gateway.ParqueaderoWebSocketHandler;
 import co.edu.uco.easypark.infrastructure.notification.FirebaseNotificationService;
 import co.edu.uco.easypark.infrastructure.persistence.entity.ParqueaderoEntity;
 import co.edu.uco.easypark.infrastructure.persistence.entity.ReservaEntity;
 import co.edu.uco.easypark.infrastructure.persistence.entity.UsuarioEntity;
-import co.edu.uco.easypark.infrastructure.persistence.repository.ParametroCatalogoRepository;
 import co.edu.uco.easypark.infrastructure.persistence.repository.ParqueaderoRepository;
 import co.edu.uco.easypark.infrastructure.persistence.repository.ReservaRepository;
 import co.edu.uco.easypark.infrastructure.persistence.repository.UsuarioRepository;
@@ -37,7 +37,7 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
     private final ParqueaderoWebSocketHandler wsHandler;
     private final FirebaseNotificationService notificationService;
     private final OWASPSanitizerHelper sanitizer;
-    private final ParametroCatalogoRepository parametroRepository;
+    private final ParameterService parameterService;
 
     public ParqueaderoInteractor(ParqueaderoRepository parqueaderoRepository,
                                   UsuarioRepository usuarioRepository,
@@ -46,7 +46,7 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
                                   ParqueaderoWebSocketHandler wsHandler,
                                   FirebaseNotificationService notificationService,
                                   OWASPSanitizerHelper sanitizer,
-                                  ParametroCatalogoRepository parametroRepository) {
+                                  ParameterService parameterService) {
         this.parqueaderoRepository = parqueaderoRepository;
         this.usuarioRepository = usuarioRepository;
         this.reservaRepository = reservaRepository;
@@ -54,7 +54,7 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
         this.wsHandler = wsHandler;
         this.notificationService = notificationService;
         this.sanitizer = sanitizer;
-        this.parametroRepository = parametroRepository;
+        this.parameterService = parameterService;
     }
 
     @Override
@@ -81,12 +81,8 @@ public class ParqueaderoInteractor implements IParqueaderoUseCase {
     }
 
     private void validarPrecio(BigDecimal precio) {
-        BigDecimal minimo = parametroRepository.findByClave("PRECIO_MINIMO_PARQUEADERO")
-                .map(p -> new BigDecimal(p.getValor()))
-                .orElse(new BigDecimal("1000"));
-        BigDecimal maximo = parametroRepository.findByClave("PRECIO_MAXIMO_PARQUEADERO")
-                .map(p -> new BigDecimal(p.getValor()))
-                .orElse(new BigDecimal("50000"));
+        BigDecimal minimo = new BigDecimal(parameterService.obtener("PRECIO_MINIMO_PARQUEADERO"));
+        BigDecimal maximo = new BigDecimal(parameterService.obtener("PRECIO_MAXIMO_PARQUEADERO"));
         if (precio.compareTo(minimo) < 0) {
             throw new EasyParkException("El precio minimo por hora es $" + minimo, HttpStatus.BAD_REQUEST);
         }

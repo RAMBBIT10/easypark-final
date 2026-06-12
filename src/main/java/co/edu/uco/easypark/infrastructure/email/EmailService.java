@@ -1,5 +1,7 @@
 package co.edu.uco.easypark.infrastructure.email;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -11,6 +13,8 @@ import java.util.Map;
 
 @Service
 public class EmailService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
     private final RestTemplate restTemplate;
@@ -29,18 +33,24 @@ public class EmailService {
     private Map<String, String> obtenerMensaje(String codigo) {
         String url = strapiUrl + "/api/message-catalogs?filters[codigo][$eq]=" + codigo;
         try {
+            logger.info("Consultando Strapi para codigo: {} en {}", codigo, url);
             Map response = restTemplate.getForObject(url, Map.class);
             List<Map> data = (List<Map>) response.get("data");
             if (data != null && !data.isEmpty()) {
+                logger.info("Mensaje encontrado en Strapi para codigo: {}", codigo);
                 return (Map<String, String>) data.get(0);
+            } else {
+                logger.warn("No se encontro mensaje en Strapi para codigo: {}", codigo);
             }
         } catch (Exception e) {
+            logger.warn("Error consultando Strapi para {}: {}", codigo, e.getMessage());
         }
         return null;
     }
 
     private void enviar(String destinatario, String asunto, String html) {
         try {
+            logger.info("Enviando email a {} con asunto: {}", destinatario, asunto);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(gmailUsername);
@@ -48,7 +58,9 @@ public class EmailService {
             helper.setSubject(asunto);
             helper.setText(html, true);
             mailSender.send(message);
+            logger.info("Email enviado exitosamente a {}", destinatario);
         } catch (Exception e) {
+            logger.error("Error enviando email a {}: {}", destinatario, e.getMessage());
             throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
         }
     }
@@ -65,7 +77,7 @@ public class EmailService {
         if (msg != null) {
             enviar(destinatario, msg.get("asunto"), reemplazar(msg.get("cuerpo"), Map.of("nombre", nombreUsuario)));
         } else {
-            enviar(destinatario, "Bienvenido a EasyPark", "<h2>Bienvenido " + nombreUsuario + "</h2><p>Tu cuenta ha sido creada exitosamente.</p>");
+            logger.warn("No se pudo obtener mensaje BIENVENIDA de Strapi, email no enviado.");
         }
     }
 
@@ -74,7 +86,7 @@ public class EmailService {
         if (msg != null) {
             enviar(destinatario, msg.get("asunto"), reemplazar(msg.get("cuerpo"), Map.of("nombre", nombreUsuario, "parqueadero", parqueadero, "fecha", fecha)));
         } else {
-            enviar(destinatario, "Reserva confirmada - EasyPark", "<h2>Hola " + nombreUsuario + "</h2><p>Tu reserva en " + parqueadero + " fue confirmada.</p>");
+            logger.warn("No se pudo obtener mensaje CONFIRMACION_RESERVA de Strapi, email no enviado.");
         }
     }
 
@@ -83,7 +95,7 @@ public class EmailService {
         if (msg != null) {
             enviar(destinatario, msg.get("asunto"), reemplazar(msg.get("cuerpo"), Map.of("nombreDuenio", nombreDuenio, "parqueadero", parqueadero, "conductor", conductor, "placa", placa, "fecha", fecha)));
         } else {
-            enviar(destinatario, "Nueva reserva - EasyPark", "<h2>Hola " + nombreDuenio + "</h2><p>" + conductor + " reservó en " + parqueadero + ".</p>");
+            logger.warn("No se pudo obtener mensaje NUEVA_RESERVA_DUENIO de Strapi, email no enviado.");
         }
     }
 
@@ -92,7 +104,7 @@ public class EmailService {
         if (msg != null) {
             enviar(destinatario, msg.get("asunto"), reemplazar(msg.get("cuerpo"), Map.of("nombre", nombreUsuario, "parqueadero", parqueadero, "total", total, "inicio", inicio, "fin", fin)));
         } else {
-            enviar(destinatario, "Estadia finalizada - EasyPark", "<h2>Hola " + nombreUsuario + "</h2><p>Total: $" + total + "</p>");
+            logger.warn("No se pudo obtener mensaje ESTADIA_FINALIZADA de Strapi, email no enviado.");
         }
     }
 
@@ -101,7 +113,7 @@ public class EmailService {
         if (msg != null) {
             enviar(destinatario, msg.get("asunto"), reemplazar(msg.get("cuerpo"), Map.of("nombre", nombreUsuario, "parqueadero", parqueadero, "motivo", motivo)));
         } else {
-            enviar(destinatario, "Reserva cancelada - EasyPark", "<h2>Hola " + nombreUsuario + "</h2><p>Tu reserva fue cancelada.</p>");
+            logger.warn("No se pudo obtener mensaje RECHAZO_RESERVA de Strapi, email no enviado.");
         }
     }
 
@@ -110,7 +122,7 @@ public class EmailService {
         if (msg != null) {
             enviar(destinatario, msg.get("asunto"), reemplazar(msg.get("cuerpo"), Map.of("nombre", nombreUsuario, "parqueadero", parqueadero, "total", total)));
         } else {
-            enviar(destinatario, "Pago confirmado - EasyPark", "<h2>Hola " + nombreUsuario + "</h2><p>Pago de $" + total + " confirmado.</p>");
+            logger.warn("No se pudo obtener mensaje PAGO_FINALIZADO de Strapi, email no enviado.");
         }
     }
 }
